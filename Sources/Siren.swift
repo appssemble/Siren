@@ -165,10 +165,14 @@ private extension Siren {
     func performVersionCheck() {
         do {
             let url = try iTunesURLFromString()
-            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 30)
-            URLCache.shared.removeCachedResponse(for: request)
+            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringCacheData, timeoutInterval: 30)
             URLSession.shared.dataTask(with: request, completionHandler: { [weak self] (data, response, error) in
-                self?.processResults(withData: data, response: response, error: error)
+                DispatchQueue.global().async {
+                    let list = try? String(contentsOf: url)
+                    DispatchQueue.main.async {
+                        self?.processResults(withData: list?.data(using: .utf8), response: response, error: error)
+                    }
+                }
             }).resume()
         } catch {
             postError(.malformedURL)
